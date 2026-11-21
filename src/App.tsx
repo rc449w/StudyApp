@@ -48,6 +48,7 @@ export default function App() {
   );
   const [manualOfflineMode, setManualOfflineMode] = useState(false);
   const [backendReachable, setBackendReachable] = useState<boolean | null>(null);
+  const [internetReachable, setInternetReachable] = useState<boolean | null>(null);
   const [aiStatus, setAiStatus] = useState<OnlineAiStatus | null>(null);
   const [localAiState, setLocalAiState] = useState<LocalAiRuntimeState>({
     status: 'disabled',
@@ -63,7 +64,11 @@ export default function App() {
   const [activeExamId, setActiveExamId] = useState<string | null>(null);
 
   const effectiveMode: OperatingMode =
-    !isBrowserOnline || manualOfflineMode || backendReachable === false ? 'offline' : 'online';
+    !isBrowserOnline ||
+    manualOfflineMode ||
+    (backendReachable === false && internetReachable === false)
+      ? 'offline'
+      : 'online';
 
   const refreshWorkspace = useCallback(async () => {
     const snapshot = await studyStore.loadWorkspace();
@@ -78,11 +83,12 @@ export default function App() {
   }, []);
 
   const refreshOnlineStatus = useCallback(async () => {
-    const [health, status] = await Promise.all([
-      onlineAiClient.checkHealth(),
+    const [connectivity, status] = await Promise.all([
+      onlineAiClient.checkInternetConnectivity(),
       onlineAiClient.getAiServiceStatus(),
     ]);
-    setBackendReachable(health.reachable);
+    setBackendReachable(connectivity.backendReachable);
+    setInternetReachable(connectivity.internetReachable);
     setAiStatus(status);
   }, []);
 
@@ -124,6 +130,7 @@ export default function App() {
     const handleOffline = () => {
       setIsBrowserOnline(false);
       setBackendReachable(false);
+      setInternetReachable(false);
     };
 
     window.addEventListener('online', handleOnline);
@@ -220,6 +227,7 @@ export default function App() {
           manualOfflineMode={manualOfflineMode}
           isBrowserOnline={isBrowserOnline}
           backendReachable={backendReachable}
+          internetReachable={internetReachable}
           localAiState={localAiState}
           onToggleManualOffline={() => setManualOfflineMode((prev) => !prev)}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
@@ -392,6 +400,8 @@ export default function App() {
             <SettingsPage
               workspace={workspace}
               aiStatus={aiStatus}
+              backendReachable={backendReachable}
+              internetReachable={internetReachable}
               localAiState={localAiState}
               onSaveProfile={async (profile: StudentProfile) => {
                 await studyStore.saveProfile(profile);

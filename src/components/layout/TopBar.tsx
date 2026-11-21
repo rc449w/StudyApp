@@ -9,6 +9,7 @@ interface TopBarProps {
   manualOfflineMode: boolean;
   isBrowserOnline: boolean;
   backendReachable: boolean | null;
+  internetReachable?: boolean | null;
   localAiState: LocalAiRuntimeState;
   onToggleManualOffline: () => void;
   onOpenMobileMenu: () => void;
@@ -35,6 +36,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   manualOfflineMode,
   isBrowserOnline,
   backendReachable,
+  internetReachable,
   localAiState,
   onToggleManualOffline,
   onOpenMobileMenu,
@@ -50,9 +52,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   let ModeIcon = WifiOff;
 
   if (effectiveMode === 'online') {
-    modeLabel = usingLocalAi
-      ? `Online Mode · Local AI (${localAiState.activeModel})`
-      : 'Online Mode · Search Grounded';
+    if (usingLocalAi) {
+      modeLabel = `Online Mode · Local AI (${localAiState.activeModel})`;
+    } else if (backendReachable) {
+      modeLabel = 'Online Mode · Search Grounded';
+    } else {
+      modeLabel = 'Online Mode · Open Web Connected';
+    }
     modeClasses = 'text-emerald-800 bg-emerald-50 border-emerald-200';
     ModeIcon = Globe;
   } else if (usingLocalAi) {
@@ -63,8 +69,8 @@ export const TopBar: React.FC<TopBarProps> = ({
     modeLabel = 'Offline Mode · No Network';
   } else if (manualOfflineMode) {
     modeLabel = 'Offline Mode · Manual Lock';
-  } else if (backendReachable === false) {
-    modeLabel = 'Offline Mode · Server Unreachable';
+  } else if (backendReachable === false && internetReachable === false) {
+    modeLabel = 'Offline Mode · Internet Unreachable';
   }
 
   return (

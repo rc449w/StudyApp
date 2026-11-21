@@ -194,12 +194,25 @@ async function createServer() {
   const app = express();
   app.use(express.json({ limit: '15mb' }));
 
+  // Allow cross-origin requests from installed desktop (tauri://localhost / tauri.localhost) and standalone mobile PWA clients
+  app.use('/api', (req: Request, res: Response, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+
   // Core service health endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({
       status: 'ok',
       service: 'studywise-ai-backend',
       stage: 'stage-4-online-research-offline-engine',
+      publicAppUrl: process.env.APP_URL || '',
       timestamp: new Date().toISOString(),
     });
   });
@@ -728,7 +741,7 @@ async function createServer() {
     const quarter = body.quarter?.trim() || 'Quarter 1';
     const onlineTopicFocus = body.onlineTopicFocus?.trim() || '';
 
-    const questionCount = Math.min(30, Math.max(1, Number(body.questionCount || 5)));
+    const questionCount = Math.min(50, Math.max(1, Number(body.questionCount || 20)));
     const requestedTypes =
       Array.isArray(body.questionTypes) && body.questionTypes.length > 0
         ? body.questionTypes

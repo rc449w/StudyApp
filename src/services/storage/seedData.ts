@@ -15,6 +15,19 @@ export const SEED_VERSION = 'stage2-doc-extraction-v1';
 export const DEFAULT_STUDENT_AVATAR =
   '/src/assets/images/avatar_student_ph_1794915500737.jpg';
 
+export function createBlankProfile(): StudentProfile {
+  return {
+    id: 'student-primary',
+    fullName: '',
+    gradeLevel: 'Grade 8',
+    strand: 'None',
+    schoolName: '',
+    preferredLanguage: 'English',
+    avatarUrl: '',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function createDemoProfile(): StudentProfile {
   return {
     id: 'student-primary',

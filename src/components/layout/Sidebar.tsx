@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart3,
   BookMarked,
@@ -11,6 +11,7 @@ import {
   History,
   LayoutDashboard,
   Settings,
+  User,
   X,
 } from 'lucide-react';
 import { NavRoute, StudentProfile } from '../../types/domain';
@@ -67,7 +68,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [imgError, setImgError] = useState(false);
 
-  const initials = profile.fullName
+  useEffect(() => {
+    setImgError(false);
+  }, [profile.avatarUrl]);
+
+  const trimmedName = profile.fullName.trim();
+  const initials = trimmedName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
@@ -152,23 +158,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!imgError && profile.avatarUrl ? (
             <img
               src={profile.avatarUrl}
-              alt={profile.fullName}
+              alt={trimmedName || 'Student profile photo'}
               referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
               className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
             />
           ) : (
             <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-800 border border-blue-200 flex items-center justify-center text-xs font-bold shrink-0">
-              {initials || 'SW'}
+              {initials || <User className="w-4 h-4" />}
             </div>
           )}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-slate-900 truncate">
-              {profile.fullName}
+              {trimmedName || 'Set Up Your Profile'}
             </p>
             <p className="text-xs text-slate-500 truncate">
-              {profile.gradeLevel}
-              {profile.strand !== 'None' ? ` · ${profile.strand}` : ''}
+              {trimmedName ? (
+                <>
+                  {profile.gradeLevel}
+                  {profile.strand !== 'None' ? ` · ${profile.strand}` : ''}
+                </>
+              ) : (
+                'Tap to add name & photo'
+              )}
             </p>
           </div>
         </button>

@@ -23,6 +23,7 @@ import {
 import { fileSystemAdapter } from './fileSystemAdapter';
 import { idb, StoreName } from './indexedDb';
 import {
+  createBlankProfile,
   createDemoDocumentContents,
   createDemoDocuments,
   createDemoExamAttempts,
@@ -109,10 +110,15 @@ async function seedIfUninitialized(): Promise<void> {
   const existingSeed = await db.getByKey<SeedMetaRecord>('appMeta', SEEDED_FLAG_KEY);
 
   if (existingSeed) {
-    // Backfill demo documentContents if upgrading from stage 1
-    const existingContents = await db.getAll<DocumentExtractionContent>('documentContents');
-    if (existingContents.length === 0 && existingSeed.version !== SEED_VERSION) {
-      await db.putMany('documentContents', createDemoDocumentContents());
+    // Backfill demo documentContents ONLY if user has legacy demo subjects from stage 1
+    if (existingSeed.version !== SEED_VERSION) {
+      const [existingSubjects, existingContents] = await Promise.all([
+        db.getAll<Subject>('subjects'),
+        db.getAll<DocumentExtractionContent>('documentContents'),
+      ]);
+      if (existingContents.length === 0 && existingSubjects.some((s) => s.isDemo)) {
+        await db.putMany('documentContents', createDemoDocumentContents());
+      }
       await db.put<SeedMetaRecord>('appMeta', {
         key: SEEDED_FLAG_KEY,
         version: SEED_VERSION,
@@ -125,8 +131,12 @@ async function seedIfUninitialized(): Promise<void> {
   // When launching Tauri SQLite desktop for the first time, check if prior browser IndexedDB records exist
   if (desktopBridge.isTauri()) {
     try {
-      const priorSubjects = await idb.getAll<Subject>('subjects');
-      if (priorSubjects.length > 0) {
+      const [priorSubjects, priorProfiles] = await Promise.all([
+        idb.getAll<Subject>('subjects'),
+        idb.getAll<StudentProfile>('profile'),
+      ]);
+      const hasUserProfile = Boolean(priorProfiles[0]?.fullName?.trim());
+      if (priorSubjects.length > 0 || hasUserProfile) {
         const stores: StoreName[] = [
           'profile',
           'subjects',
@@ -152,19 +162,13 @@ async function seedIfUninitialized(): Promise<void> {
         return;
       }
     } catch {
-      // Proceed with clean SQLite seed if IndexedDB is unavailable
+      // Proceed with clean SQLite initialization if IndexedDB is unavailable
     }
   }
 
+  // Fresh install starts completely blank: empty personal details and zero demo study data
   await Promise.all([
-    db.put('profile', createDemoProfile()),
-    db.putMany('subjects', createDemoSubjects()),
-    db.putMany('documents', createDemoDocuments()),
-    db.putMany('documentContents', createDemoDocumentContents()),
-    db.putMany('topics', createDemoTopics()),
-    db.putMany('studyGuides', createDemoStudyGuides()),
-    db.putMany('mockExams', createDemoMockExams()),
-    db.putMany('examAttempts', createDemoExamAttempts()),
+    db.put('profile', createBlankProfile()),
     db.put<StorageConfigMetaRecord>('appMeta', {
       key: STORAGE_CONFIG_KEY,
       config: createDemoStorageConfig(),
@@ -213,7 +217,7 @@ export const studyStore = {
       desktopBridge.getStoragePaths(),
     ]);
 
-    const profile = profiles[0] ?? createDemoProfile();
+    const profile = profiles[0] ?? createBlankProfile();
     const baseConfig = storageConfigMeta?.config ?? createDemoStorageConfig();
     const localAiConfig = localAiConfigMeta?.config ?? createDefaultLocalAiConfig();
 
@@ -606,13 +610,32 @@ export const studyStore = {
   async resetToDemoData(): Promise<WorkspaceSnapshot> {
     const db = getActiveStorageAdapter();
     await db.clearAll();
+    await Promise.all([
+      db.put('profile', createDemoProfile()),
+      db.putMany('subjects', createDemoSubjects()),
+      db.putMany('documents', createDemoDocuments()),
+      db.putMany('documentContents', createDemoDocumentContents()),
+      db.putMany('topics', createDemoTopics()),
+      db.putMany('studyGuides', createDemoStudyGuides()),
+      db.putMany('mockExams', createDemoMockExams()),
+      db.putMany('examAttempts', createDemoExamAttempts()),
+      db.put<StorageConfigMetaRecord>('appMeta', {
+        key: STORAGE_CONFIG_KEY,
+        config: createDemoStorageConfig(),
+      }),
+      db.put<SeedMetaRecord>('appMeta', {
+        key: SEEDED_FLAG_KEY,
+        version: SEED_VERSION,
+        seededAt: new Date().toISOString(),
+      }),
+    ]);
     return this.loadWorkspace();
   },
 
   async clearAllStudyDataKeepProfile(): Promise<WorkspaceSnapshot> {
     const db = getActiveStorageAdapter();
     const existingProfiles = await db.getAll<StudentProfile>('profile');
-    const keptProfile = existingProfiles[0] ?? createDemoProfile();
+    const keptProfile = existingProfiles[0] ?? createBlankProfile();
 
     await Promise.all([
       db.clearStore('subjects'),

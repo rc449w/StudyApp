@@ -96,9 +96,9 @@ export const ExamGeneratorModal: React.FC<ExamGeneratorModalProps> = ({
     defaultSubject?.gradeLevel ?? workspace.profile.gradeLevel
   );
   const [quarter, setQuarter] = useState<TermPeriod>('Quarter 1');
-  const [questionCount, setQuestionCount] = useState<number>(8);
+  const [questionCount, setQuestionCount] = useState<number>(20);
   const [difficulty, setDifficulty] = useState<ExamDifficulty>('medium');
-  const [durationMinutes, setDurationMinutes] = useState<number>(15);
+  const [durationMinutes, setDurationMinutes] = useState<number>(25);
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>(() => {
     if (initialSourceMode === 'general-practice') {
       const presetId = inferPresetForSubject(defaultSubject?.name ?? '');
@@ -631,10 +631,10 @@ export const ExamGeneratorModal: React.FC<ExamGeneratorModalProps> = ({
               <input
                 type="number"
                 min={1}
-                max={30}
+                max={50}
                 value={questionCount}
                 onChange={(e) =>
-                  setQuestionCount(Math.min(30, Math.max(1, Number(e.target.value || 1))))
+                  setQuestionCount(Math.min(50, Math.max(1, Number(e.target.value || 1))))
                 }
                 className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
               />

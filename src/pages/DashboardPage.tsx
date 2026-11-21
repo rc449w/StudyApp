@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Globe,
   HardDrive,
+  User,
 } from 'lucide-react';
 import { DemoLabel } from '../components/common/DemoTag';
 import {
@@ -57,28 +58,67 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       : null;
 
   const subjectById = new Map(subjects.map((s) => [s.id, s]));
+  const hasProfileName = Boolean(profile.fullName.trim());
+  const hasDemoItems = subjects.some((s) => s.isDemo) || documents.some((d) => d.isDemo);
 
   return (
     <div className="space-y-6">
       {/* Welcome Banner + Study Engine Context */}
       <section className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="space-y-2 max-w-2xl">
-          <p className="text-xs font-medium text-blue-700">
-            Local-First Study Workspace · Philippines Grade 7–12 ·{' '}
-            {effectiveMode === 'online' ? 'Online Research Ready' : 'Offline Study Mode'}
-          </p>
-          <h2 className="font-display text-2xl font-bold text-slate-900 tracking-tight text-balance">
-            Magandang araw, {profile.fullName}
-          </h2>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Your subjects, uploaded documents, confirmed topics, saved research explanations, study
-            guides, and mock exam attempts stay stored locally in IndexedDB for offline study.
-            Items marked <span className="font-medium text-amber-700">Demo Data</span> can be
-            edited or cleared anytime in Settings.
-          </p>
+        <div className="flex items-start gap-4 max-w-2xl">
+          <button
+            type="button"
+            onClick={() => onNavigate('settings')}
+            title="Change student profile & photo"
+            className="shrink-0 w-14 h-14 rounded-xl border border-slate-200 bg-slate-100 hover:border-blue-400 transition-colors overflow-hidden flex items-center justify-center cursor-pointer"
+          >
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt={profile.fullName || 'Student profile photo'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-6 h-6 text-slate-400" />
+            )}
+          </button>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-blue-700">
+              Local-First Study Workspace · Philippines Grade 7–12 ·{' '}
+              {effectiveMode === 'online' ? 'Online Research Ready' : 'Offline Study Mode'}
+            </p>
+            <h2 className="font-display text-2xl font-bold text-slate-900 tracking-tight text-balance">
+              {hasProfileName
+                ? `Magandang araw, ${profile.fullName.trim()}`
+                : 'Welcome to StudyWise AI'}
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {hasProfileName
+                ? 'Your subjects, uploaded documents, confirmed topics, saved research explanations, study guides, and mock exam attempts stay stored locally on your device for offline study.'
+                : 'Start by adding your student details and profile photo in Settings, then add subjects or launch a quick general spelling/math practice quiz.'}
+              {hasDemoItems && (
+                <>
+                  {' '}
+                  Items marked <span className="font-medium text-amber-700">Demo Data</span> can be
+                  edited or cleared anytime in Settings.
+                </>
+              )}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {!hasProfileName && (
+            <button
+              type="button"
+              onClick={() => onNavigate('settings')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <User className="w-4 h-4" />
+              <span>Set Up Profile &amp; Photo</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onNavigate('documents')}
@@ -314,7 +354,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </button>
             </div>
             <div className="divide-y divide-slate-200">
-              {mockExams.map((exam) => {
+              {mockExams.slice(0, 3).map((exam) => {
                 const subj = subjectById.get(exam.subjectId);
                 return (
                   <div key={exam.id} className="p-5 space-y-2.5">
@@ -338,6 +378,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </div>
                 );
               })}
+              {mockExams.length === 0 && (
+                <div className="p-5 text-center space-y-3">
+                  <p className="text-xs text-slate-500">
+                    No quizzes generated yet. Try a General English Spelling or Math Quiz right away!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('mock-exams')}
+                    className="w-full py-2 px-3 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Open Mock Exam &amp; Quiz Generator
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 
