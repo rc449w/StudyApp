@@ -1,0 +1,6 @@
+{
+  "name": "StudyWise AI",
+  "description": "Local-first study workspace, curriculum organizer, and offline exam practice app for Grade 7 to Grade 12 students in the Philippines.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
